@@ -8,27 +8,49 @@ This is a **macOS menu bar application** (menubar app) built with SwiftUI. It's 
 
 ## Build and Run Commands
 
-### Building the Project
+### Quick Build (推荐)
+
+使用项目根目录的构建脚本：
 
 ```bash
-# Navigate to the timer directory
+# 编译 Debug 版本（默认）
+./build.sh
+
+# 编译 Release 版本（优化后）
+./build.sh Release
+
+# 运行应用
+./build/run.sh
+# 或双击 build/timer.app
+```
+
+构建产物位于 `build/timer.app`，可以直接双击运行或分发。
+
+### Building the Project (手动编译)
+
+```bash
+# 方法1: 使用 xcodebuild 直接编译
+xcodebuild -project timer/timer.xcodeproj -scheme timer -configuration Debug build
+
+# 方法2: 进入 timer 目录编译
 cd timer
-
-# Build using Xcode command line tools
-xcodebuild -project timer.xcodeproj -scheme timer -configuration Debug build
-
-# Build for release
 xcodebuild -project timer.xcodeproj -scheme timer -configuration Release build
 ```
 
 ### Running the Application
 
 ```bash
-# Run directly from Xcode build
-xcodebuild -project timer.xcodeproj -scheme timer -configuration Debug build && open build/Debug/timer.app
+# 方法1: 使用构建脚本
+./build/run.sh
 
-# Or simply open in Xcode and run (⌘R)
-open timer.xcodeproj
+# 方法2: 直接打开 .app 文件
+open build/timer.app
+
+# 方法3: 从 Xcode DerivedData 打开
+open ~/Library/Developer/Xcode/DerivedData/timer-*/Build/Products/Debug/timer.app
+
+# 方法4: 在 Xcode 中运行
+open timer/timer.xcodeproj  # 然后按 ⌘R
 ```
 
 ### Regenerating the Xcode Project

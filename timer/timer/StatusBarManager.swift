@@ -42,34 +42,40 @@ class StatusBarManager {
     /// 创建状态栏项
     private func setupStatusBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+        // 设置点击事件
+        if let button = statusItem?.button {
+            button.action = #selector(statusBarButtonClicked)
+            button.target = self
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
+
         updateTitle()
     }
 
     /// 创建菜单
     private func setupMenu() {
+        // 菜单在右键时动态创建
+    }
+
+    /// 状态栏按钮点击事件
+    @objc private func statusBarButtonClicked() {
+        guard let event = NSApp.currentEvent else { return }
+
+        // 右键点击显示菜单
+        if event.type == .rightMouseUp {
+            showMenu()
+        } else {
+            // 左键点击显示 Popover
+            showSettings()
+        }
+    }
+
+    /// 显示右键菜单
+    private func showMenu() {
+        guard let statusItem = statusItem else { return }
+
         let menu = NSMenu()
-
-        // Settings 菜单项
-        let settingsItem = NSMenuItem(
-            title: "Settings...",
-            action: #selector(showSettings),
-            keyEquivalent: ","
-        )
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        // Reset 菜单项
-        let resetItem = NSMenuItem(
-            title: "Reset",
-            action: #selector(resetCountdown),
-            keyEquivalent: "r"
-        )
-        resetItem.target = self
-        menu.addItem(resetItem)
-
-        menu.addItem(NSMenuItem.separator())
 
         // Quit 菜单项
         let quitItem = NSMenuItem(
@@ -80,7 +86,10 @@ class StatusBarManager {
         quitItem.target = self
         menu.addItem(quitItem)
 
-        statusItem?.menu = menu
+        // 临时显示菜单
+        statusItem.menu = menu
+        statusItem.button?.performClick(nil)
+        statusItem.menu = nil
     }
 
     /// 订阅状态变化
@@ -103,6 +112,10 @@ class StatusBarManager {
             case .idle:
                 button.title = "⏱"
             case .running:
+                if let remaining = self.countdownManager.state.remainingTime {
+                    button.title = self.formatTime(remaining)
+                }
+            case .paused:
                 if let remaining = self.countdownManager.state.remainingTime {
                     button.title = self.formatTime(remaining)
                 }
@@ -143,7 +156,7 @@ class StatusBarManager {
 
         // 创建新的 Popover
         let newPopover = NSPopover()
-        newPopover.contentSize = NSSize(width: 220, height: 160)
+        newPopover.contentSize = NSSize(width: 320, height: 400)
         newPopover.behavior = .transient
         newPopover.contentViewController = NSHostingController(
             rootView: SettingsPopover(countdownManager: countdownManager)
@@ -159,11 +172,6 @@ class StatusBarManager {
         }
 
         popover = newPopover
-    }
-
-    /// 重置倒计时
-    @objc private func resetCountdown() {
-        countdownManager.resetCountdown()
     }
 
     /// 退出应用

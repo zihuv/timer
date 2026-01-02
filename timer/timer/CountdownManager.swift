@@ -19,17 +19,82 @@ class CountdownManager: ObservableObject {
     /// - Parameter duration: 倒计时时长（秒）
     func startCountdown(duration: TimeInterval) {
         // 设置结束时间并重新赋值整个 state 对象以触发 @Published
-        state = CountdownState(endTime: Date().addingTimeInterval(duration))
+        state = CountdownState(
+            endTime: Date().addingTimeInterval(duration),
+            lastDuration: duration,
+            isPaused: false,
+            pausedAt: nil
+        )
 
         // 启动定时器
         startTimer()
     }
 
     /// 重置倒计时
+    /// 将倒计时重置到初始时间，并进入暂停状态
     func resetCountdown() {
-        // 重新赋值整个 state 对象以触发 @Published
-        state = CountdownState(endTime: nil)
+        // 如果有上次时长，重置到初始时间并暂停；否则回到 idle
+        guard let duration = state.lastDuration else {
+            state = CountdownState()
+            stopTimer()
+            return
+        }
+
+        // 使用同一个时间点，避免时序差异
+        let now = Date()
+
+        // 使用存储的时长重置，并保持在暂停状态
+        state = CountdownState(
+            endTime: now.addingTimeInterval(duration),
+            lastDuration: duration,
+            isPaused: true,
+            pausedAt: now
+        )
         stopTimer()
+    }
+
+    /// 暂停倒计时
+    func pauseCountdown() {
+        guard state.status == .running else { return }
+
+        // 记录当前时间点，停止定时器
+        state = CountdownState(
+            endTime: state.endTime,
+            lastDuration: state.lastDuration,
+            isPaused: true,
+            pausedAt: Date()
+        )
+        stopTimer()
+    }
+
+    /// 继续倒计时
+    func resumeCountdown() {
+        guard state.status == .paused,
+              let oldEndTime = state.endTime,
+              let pausedAt = state.pausedAt else { return }
+
+        // 计算暂停了多久
+        let pauseDuration = Date().timeIntervalSince(pausedAt)
+
+        // 新的结束时间 = 原结束时间 + 暂停时长
+        let newEndTime = oldEndTime.addingTimeInterval(pauseDuration)
+
+        state = CountdownState(
+            endTime: newEndTime,
+            lastDuration: state.lastDuration,
+            isPaused: false,
+            pausedAt: nil
+        )
+        startTimer()
+    }
+
+    /// 切换暂停/继续状态
+    func togglePause() {
+        if state.status == .running {
+            pauseCountdown()
+        } else if state.status == .paused {
+            resumeCountdown()
+        }
     }
 
     // MARK: - 私有方法
@@ -58,9 +123,12 @@ class CountdownManager: ObservableObject {
         }
 
         // 重新赋值 state 以触发 @Published 更新
-        // 由于 remainingTime 是计算属性，每次访问都会重新计算
-        // 但我们需要触发 Combine 订阅，所以需要重新赋值整个对象
-        let currentEndTime = state.endTime
-        state = CountdownState(endTime: currentEndTime)
+        // 必须保留所有字段，否则会丢失状态信息
+        state = CountdownState(
+            endTime: state.endTime,
+            lastDuration: state.lastDuration,
+            isPaused: state.isPaused,
+            pausedAt: state.pausedAt
+        )
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 设置倒计时的 Popover 视图
+/// 主界面视图
 struct SettingsPopover: View {
     /// 倒计时管理器
     @ObservedObject var countdownManager: CountdownManager
@@ -18,77 +18,140 @@ struct SettingsPopover: View {
     @State private var showError: Bool = false
 
     var body: some View {
-        VStack(spacing: 20) {
-            // 标题
-            Text("Set Countdown")
-                .font(.headline)
-                .fontWeight(.semibold)
-
-            // 时间输入
-            HStack(spacing: 8) {
-                // 分钟输入框
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Min")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("25", text: $minutes)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 70)
-                        .multilineTextAlignment(.center)
-                }
-
-                // 分隔符
-                Text(":")
-                    .font(.system(size: 20, weight: .medium))
-                    .padding(.top, 12)
-
-                // 秒数输入框
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Sec")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("00", text: $seconds)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 70)
-                        .multilineTextAlignment(.center)
-                }
-            }
-
-            // 错误提示
-            if showError {
-                Text("Please enter valid time values")
+        VStack(spacing: 24) {
+            // 当前倒计时显示
+            VStack(spacing: 8) {
+                Text("Current Countdown")
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundColor(.secondary)
+                    .textCase(.uppercase)
+
+                Text(displayTime)
+                    .font(.system(size: 48, weight: .light, design: .rounded))
+                    .foregroundColor(.primary)
+                    .frame(minWidth: 200)
             }
 
-            // 按钮
-            HStack(spacing: 12) {
-                // 取消按钮
-                Button("Cancel") {
-                    presentationMode.wrappedValue.dismiss()
-                }
-                .buttonStyle(.bordered)
-                .frame(minWidth: 80)
+            Divider()
 
+            // 时间设置区域
+            VStack(spacing: 12) {
+                Text("Set New Countdown")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .textCase(.uppercase)
+
+                HStack(spacing: 12) {
+                    // 分钟输入框
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Min")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        TextField("25", text: $minutes)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                            .multilineTextAlignment(.center)
+                            .font(.system(.body, design: .rounded))
+                    }
+
+                    // 分隔符
+                    Text(":")
+                        .font(.system(size: 24, weight: .medium))
+                        .padding(.top, 14)
+
+                    // 秒数输入框
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Sec")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        TextField("00", text: $seconds)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                            .multilineTextAlignment(.center)
+                            .font(.system(.body, design: .rounded))
+                    }
+                }
+
+                // 错误提示
+                if showError {
+                    Text("Please enter valid time values")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            }
+
+            Divider()
+
+            // 控制按钮区域
+            HStack(spacing: 12) {
                 // 开始按钮
-                Button("Start") {
-                    startCountdown()
+                Button(action: startCountdown) {
+                    Label("Start", systemImage: "play.fill")
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .frame(minWidth: 80)
-            }
+                .disabled(countdownManager.state.status == .running)
 
-            Spacer()
+                // 暂停/继续按钮
+                Button(action: togglePause) {
+                    Label(
+                        countdownManager.state.status == .paused ? "Resume" : "Pause",
+                        systemImage: countdownManager.state.status == .paused ? "play.fill" : "pause.fill"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(countdownManager.state.status == .idle || countdownManager.state.status == .finished)
+
+                // 重置按钮
+                Button(action: resetCountdown) {
+                    Label("Reset", systemImage: "arrow.counterclockwise")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(countdownManager.state.status == .idle)
+            }
         }
-        .padding()
-        .frame(width: 220, height: 180)
+        .padding(24)
+        .frame(width: 320, height: 400)
         .onAppear {
             // 重置错误状态
             showError = false
         }
     }
 
+    // MARK: - 计算属性
+
+    /// 显示的时间文本
+    private var displayTime: String {
+        switch countdownManager.state.status {
+        case .idle:
+            return "--:--"
+        case .running, .paused:
+            if let remaining = countdownManager.state.remainingTime {
+                return formatTime(remaining)
+            }
+            return "--:--"
+        case .finished:
+            return "Done!"
+        }
+    }
+
     // MARK: - 私有方法
+
+    /// 格式化时间
+    private func formatTime(_ interval: TimeInterval) -> String {
+        let time = Int(interval)
+        let hours = time / 3600
+        let minutes = (time % 3600) / 60
+        let seconds = time % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            return String(format: "%02d:%02d", minutes, seconds)
+        }
+    }
 
     /// 开始倒计时
     private func startCountdown() {
@@ -107,8 +170,18 @@ struct SettingsPopover: View {
         // 启动倒计时
         countdownManager.startCountdown(duration: duration)
 
-        // 关闭 Popover
-        presentationMode.wrappedValue.dismiss()
+        // 清除错误提示
+        showError = false
+    }
+
+    /// 切换暂停/继续
+    private func togglePause() {
+        countdownManager.togglePause()
+    }
+
+    /// 重置倒计时
+    private func resetCountdown() {
+        countdownManager.resetCountdown()
     }
 }
 
