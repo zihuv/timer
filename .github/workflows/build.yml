@@ -26,6 +26,9 @@ on:
         default: '发布新版本'
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Timer App
