@@ -1,0 +1,49 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: '构建配置'
+        required: true
+        default: 'Release'
+        type: choice
+        options:
+          - Debug
+          - Release
+
+jobs:
+  build:
+    name: Build Timer App
+    runs-on: macos-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 显示 Xcode 版本
+        run: xcodebuild -version
+
+      - name: 构建项目
+        run: |
+          cd timer
+          xcodebuild -project timer.xcodeproj \
+            -scheme timer \
+            -configuration ${{ inputs.configuration }} \
+            build
+
+      - name: 准备构建产物
+        run: |
+          mkdir -p artifacts
+          if [ "${{ inputs.configuration }}" = "Release" ]; then
+            cp -R ~/Library/Developer/Xcode/DerivedData/timer-*/Build/Products/Release/timer.app artifacts/
+          else
+            cp -R ~/Library/Developer/Xcode/DerivedData/timer-*/Build/Products/Debug/timer.app artifacts/
+          fi
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: timer-macos-${{ inputs.configuration }}
+          path: artifacts/timer.app
+          retention-days: 30
