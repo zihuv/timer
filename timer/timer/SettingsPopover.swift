@@ -18,102 +18,77 @@ struct SettingsPopover: View {
     @State private var showError: Bool = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            // 当前倒计时显示
+        VStack(spacing: 16) {
+            // 时间输入区域（常驻显示）
             VStack(spacing: 8) {
-                Text("Current Countdown")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
+                HStack(spacing: 4) {
+                    TextField("25", text: $minutes)
+                        .textFieldStyle(.plain)
+                        .frame(width: 70)
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 24, weight: .medium, design: .rounded))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(8)
+                        .disabled(countdownManager.state.status != .idle)
 
-                Text(displayTime)
-                    .font(.system(size: 48, weight: .light, design: .rounded))
-                    .foregroundColor(.primary)
-                    .frame(minWidth: 200)
-            }
-
-            Divider()
-
-            // 时间设置区域
-            VStack(spacing: 12) {
-                Text("Set New Countdown")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
-
-                HStack(spacing: 12) {
-                    // 分钟输入框
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Min")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        TextField("25", text: $minutes)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                            .multilineTextAlignment(.center)
-                            .font(.system(.body, design: .rounded))
-                    }
-
-                    // 分隔符
                     Text(":")
                         .font(.system(size: 24, weight: .medium))
-                        .padding(.top, 14)
+                        .foregroundColor(.secondary)
 
-                    // 秒数输入框
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Sec")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        TextField("00", text: $seconds)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                            .multilineTextAlignment(.center)
-                            .font(.system(.body, design: .rounded))
-                    }
+                    TextField("00", text: $seconds)
+                        .textFieldStyle(.plain)
+                        .frame(width: 70)
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 24, weight: .medium, design: .rounded))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(8)
+                        .disabled(countdownManager.state.status != .idle)
                 }
+                .opacity(countdownManager.state.status != .idle ? 0.5 : 1.0)
 
                 // 错误提示
                 if showError {
-                    Text("Please enter valid time values")
-                        .font(.caption)
+                    Text("Please enter valid time")
+                        .font(.caption2)
                         .foregroundColor(.red)
                 }
             }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
+            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+            .cornerRadius(10)
 
-            Divider()
+            Spacer()
 
-            // 控制按钮区域
-            HStack(spacing: 12) {
-                // Start/Resume 按钮
-                Button(action: startOrResume) {
-                    Label(
-                        countdownManager.state.status == .paused ? "Resume" : "Start",
-                        systemImage: countdownManager.state.status == .paused ? "play.circle.fill" : "play.fill"
-                    )
+            // 控制按钮区域（常驻显示）
+            HStack(spacing: 10) {
+                // Start/Pause/Resume 按钮（左侧）
+                Button(action: mainButtonAction) {
+                    HStack(spacing: 6) {
+                        Image(systemName: mainButtonIcon)
+                        Text(mainButtonTitle)
+                    }
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(countdownManager.state.status == .running)
+                .controlSize(.large)
 
-                // 暂停按钮
-                Button(action: pauseCountdown) {
-                    Label("Pause", systemImage: "pause.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .disabled(countdownManager.state.status != .running)
-
-                // 重置按钮
+                // Reset 按钮（右侧）
                 Button(action: resetCountdown) {
-                    Label("Reset", systemImage: "arrow.counterclockwise")
-                        .frame(maxWidth: .infinity)
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 15))
                 }
                 .buttonStyle(.bordered)
+                .controlSize(.large)
                 .disabled(countdownManager.state.status == .idle)
             }
         }
         .padding(24)
-        .frame(width: 320, height: 400)
+        .frame(width: 260, height: 180)
         .onAppear {
             // 重置错误状态
             showError = false
@@ -121,6 +96,32 @@ struct SettingsPopover: View {
     }
 
     // MARK: - 计算属性
+
+    /// 主按钮标题
+    private var mainButtonTitle: String {
+        switch countdownManager.state.status {
+        case .idle:
+            return "Start"
+        case .running:
+            return "Pause"
+        case .paused:
+            return "Resume"
+        case .finished:
+            return "Start"
+        }
+    }
+
+    /// 主按钮图标
+    private var mainButtonIcon: String {
+        switch countdownManager.state.status {
+        case .idle, .finished:
+            return "play.fill"
+        case .running:
+            return "pause.fill"
+        case .paused:
+            return "play.circle.fill"
+        }
+    }
 
     /// 显示的时间文本
     private var displayTime: String {
@@ -174,20 +175,19 @@ struct SettingsPopover: View {
         showError = false
     }
 
-    /// Start 或 Resume 操作
-    private func startOrResume() {
-        if countdownManager.state.status == .paused {
-            // 暂停状态，恢复倒计时
-            countdownManager.resumeCountdown()
-        } else {
-            // 其他状态（idle/finished），开始新倒计时
+    /// 主按钮动作
+    private func mainButtonAction() {
+        switch countdownManager.state.status {
+        case .idle, .finished:
+            // 开始新倒计时
             startCountdown()
+        case .running:
+            // 暂停倒计时
+            countdownManager.pauseCountdown()
+        case .paused:
+            // 恢复倒计时
+            countdownManager.resumeCountdown()
         }
-    }
-
-    /// 暂停倒计时
-    private func pauseCountdown() {
-        countdownManager.pauseCountdown()
     }
 
     /// 重置倒计时

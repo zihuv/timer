@@ -42,14 +42,23 @@ class CountdownManager: ObservableObject {
     func pauseCountdown() {
         guard state.status == .running else { return }
 
-        // 记录当前时间点，停止定时器
+        // 先停止定时器，防止竞态条件
+        stopTimer()
+
+        // 计算当前精确的剩余时间（向上取整到秒）
+        guard let endTime = state.endTime else { return }
+        let currentRemaining = ceil(endTime.timeIntervalSinceNow)
+
+        // 创建新的结束时间点，使得暂停时的剩余时间是整数秒
+        let newEndTime = Date().addingTimeInterval(currentRemaining)
+
+        // 记录当前时间点
         state = CountdownState(
-            endTime: state.endTime,
+            endTime: newEndTime,
             lastDuration: state.lastDuration,
             isPaused: true,
             pausedAt: Date()
         )
-        stopTimer()
     }
 
     /// 继续倒计时
@@ -102,6 +111,11 @@ class CountdownManager: ObservableObject {
     /// 更新状态
     /// 检查倒计时是否完成，如果完成则停止定时器
     private func updateState() {
+        // 如果已暂停，不更新状态
+        if state.isPaused {
+            return
+        }
+
         // 检查是否完成
         if let remaining = state.remainingTime, remaining <= 0 {
             stopTimer()

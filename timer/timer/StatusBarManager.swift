@@ -156,7 +156,7 @@ class StatusBarManager {
 
         // 创建新的 Popover
         let newPopover = NSPopover()
-        newPopover.contentSize = NSSize(width: 320, height: 400)
+        newPopover.contentSize = NSSize(width: 260, height: 180)
         newPopover.behavior = .transient
         newPopover.contentViewController = NSHostingController(
             rootView: SettingsPopover(countdownManager: countdownManager)

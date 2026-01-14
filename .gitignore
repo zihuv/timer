@@ -136,3 +136,5 @@ Carthage/Build/
 
 # AppCode
 .idea/
+
+.DS_Store

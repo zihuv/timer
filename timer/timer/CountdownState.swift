@@ -27,8 +27,8 @@ struct CountdownState {
     var remainingTime: TimeInterval? {
         guard let endTime = endTime else { return nil }
         if isPaused, let pausedAt = pausedAt {
-            // 使用 ceil 向上取整，避免因时序差异导致显示少一秒
-            return ceil(max(0, endTime.timeIntervalSince(pausedAt)))
+            // 暂停时，endTime已经被调整为整数秒，直接计算即可
+            return max(0, endTime.timeIntervalSince(pausedAt))
         }
         return max(0, endTime.timeIntervalSinceNow)
     }
