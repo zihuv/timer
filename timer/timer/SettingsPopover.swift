@@ -84,24 +84,24 @@ struct SettingsPopover: View {
 
             // 控制按钮区域
             HStack(spacing: 12) {
-                // 开始按钮
-                Button(action: startCountdown) {
-                    Label("Start", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity)
+                // Start/Resume 按钮
+                Button(action: startOrResume) {
+                    Label(
+                        countdownManager.state.status == .paused ? "Resume" : "Start",
+                        systemImage: countdownManager.state.status == .paused ? "play.circle.fill" : "play.fill"
+                    )
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(countdownManager.state.status == .running)
 
-                // 暂停/继续按钮
-                Button(action: togglePause) {
-                    Label(
-                        countdownManager.state.status == .paused ? "Resume" : "Pause",
-                        systemImage: countdownManager.state.status == .paused ? "play.fill" : "pause.fill"
-                    )
-                    .frame(maxWidth: .infinity)
+                // 暂停按钮
+                Button(action: pauseCountdown) {
+                    Label("Pause", systemImage: "pause.fill")
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
-                .disabled(countdownManager.state.status == .idle || countdownManager.state.status == .finished)
+                .disabled(countdownManager.state.status != .running)
 
                 // 重置按钮
                 Button(action: resetCountdown) {
@@ -174,9 +174,20 @@ struct SettingsPopover: View {
         showError = false
     }
 
-    /// 切换暂停/继续
-    private func togglePause() {
-        countdownManager.togglePause()
+    /// Start 或 Resume 操作
+    private func startOrResume() {
+        if countdownManager.state.status == .paused {
+            // 暂停状态，恢复倒计时
+            countdownManager.resumeCountdown()
+        } else {
+            // 其他状态（idle/finished），开始新倒计时
+            startCountdown()
+        }
+    }
+
+    /// 暂停倒计时
+    private func pauseCountdown() {
+        countdownManager.pauseCountdown()
     }
 
     /// 重置倒计时

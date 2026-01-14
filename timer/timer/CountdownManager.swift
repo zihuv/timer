@@ -31,25 +31,10 @@ class CountdownManager: ObservableObject {
     }
 
     /// 重置倒计时
-    /// 将倒计时重置到初始时间，并进入暂停状态
+    /// 将倒计时重置到空闲状态
     func resetCountdown() {
-        // 如果有上次时长，重置到初始时间并暂停；否则回到 idle
-        guard let duration = state.lastDuration else {
-            state = CountdownState()
-            stopTimer()
-            return
-        }
-
-        // 使用同一个时间点，避免时序差异
-        let now = Date()
-
-        // 使用存储的时长重置，并保持在暂停状态
-        state = CountdownState(
-            endTime: now.addingTimeInterval(duration),
-            lastDuration: duration,
-            isPaused: true,
-            pausedAt: now
-        )
+        // 回到 idle 状态，清除所有计时信息
+        state = CountdownState()
         stopTimer()
     }
 
