@@ -31,7 +31,7 @@ struct SettingsPopover: View {
                         .padding(.vertical, 6)
                         .background(Color(NSColor.controlBackgroundColor))
                         .cornerRadius(8)
-                        .disabled(countdownManager.state.status != .idle)
+                        .disabled(countdownManager.state.status == .running || countdownManager.state.status == .paused)
 
                     Text(":")
                         .font(.system(size: 24, weight: .medium))
@@ -46,9 +46,9 @@ struct SettingsPopover: View {
                         .padding(.vertical, 6)
                         .background(Color(NSColor.controlBackgroundColor))
                         .cornerRadius(8)
-                        .disabled(countdownManager.state.status != .idle)
+                        .disabled(countdownManager.state.status == .running || countdownManager.state.status == .paused)
                 }
-                .opacity(countdownManager.state.status != .idle ? 0.5 : 1.0)
+                .opacity(countdownManager.state.status == .running || countdownManager.state.status == .paused ? 0.5 : 1.0)
 
                 // 错误提示
                 if showError {
